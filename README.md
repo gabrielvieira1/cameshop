@@ -1,5 +1,5 @@
 # Cameshop API
-Esse projeto foi desenvolvido para a disciplina de Sistemas Distribuidos é uma REST API usando .NET 5, Azure, Post and Visual Studio Code and SQL Server. The API will be written in C#.
+Esse projeto foi desenvolvido para a disciplina de Sistemas Distribuidos é uma REST API usando .NET 5, Azure, Post and Visual Studio Code and SQL Server.
 
 ## 🚀 Technologies
 
@@ -16,7 +16,7 @@ This project was developed with the following technologies:
 
 ```bash
 # Clone this repository
-$ git clone https://github.com/gabrielvieira1/Catalog.Api.git
+$ git clone https://github.com/gabrielvieira1/cameshop.git
 
 # Go into the repository folder and install dependencies
 $ cd cameshop
