@@ -5,14 +5,16 @@ using System.Threading.Tasks;
 using Cameshop.Entities;
 using Cameshop.Extensions;
 using Cameshop.Repositories;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using static Cameshop.Dtos.Dtos;
 
 namespace Cameshop.Controllers
 {
-  [ApiController]
+  [EnableCors("MyPolicy")]
   [Route("items")]
+  [ApiController]
   public class ItemsController : ControllerBase
   {
     private readonly IItemsRepository repository;
