@@ -47,6 +47,8 @@ namespace CameShop
       services.AddDbContext<AppDbContext>(
                 options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
+      services.Configure<ApiKeyMiddleware>(Configuration.GetSection("ApiKeys"));
+
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -65,6 +67,8 @@ namespace CameShop
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CameShop v1");
         c.RoutePrefix = string.Empty;//swagger
       });
+
+      app.UseMiddleware<ApiKeyMiddleware>();
 
       app.UseHttpsRedirection();
 
