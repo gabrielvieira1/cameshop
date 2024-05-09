@@ -37,7 +37,8 @@ namespace CameShop
       }));
 
       services.AddControllers();
-      services.AddScoped<IItemsRepository, SqlServerDbItemsRepository>();
+      //services.AddScoped<IItemsRepository, SqlServerDbItemsRepository>();
+      services.AddScoped<IUsersRepository, InMemUsersRepository>();
 
       services.AddSwaggerGen(c =>
       {
@@ -68,7 +69,7 @@ namespace CameShop
         c.RoutePrefix = string.Empty;//swagger
       });
 
-      app.UseMiddleware<ApiKeyMiddleware>();
+      //app.UseMiddleware<ApiKeyMiddleware>();
 
       app.UseHttpsRedirection();
 
