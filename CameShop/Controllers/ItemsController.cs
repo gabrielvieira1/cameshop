@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Cameshop.Entities;
 using Cameshop.Extensions;
 using Cameshop.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
