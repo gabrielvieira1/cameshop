@@ -19,37 +19,37 @@ namespace Cameshop.Repositories
 
     public async Task CreateItemAsync(Item item)
     {
-      await itemsCollection.catalog.AddAsync(item);
+      await itemsCollection.Items.AddAsync(item);
       await itemsCollection.SaveChangesAsync();
     }
 
     public async Task DeleteItemAsync(Guid id)
     {
-      var filter = itemsCollection.catalog.FirstOrDefault(item => item.Id == id);
+      var filter = itemsCollection.Items.FirstOrDefault(item => item.Id == id);
 
       if (filter != null)
       {
-        itemsCollection.catalog.Remove(filter);
+        itemsCollection.Items.Remove(filter);
 
         await itemsCollection.SaveChangesAsync();
       }
     }
     public async Task<Item> GetItemAsync(Guid id)
     {
-      var filter = await itemsCollection.catalog.FindAsync(id);
+      var filter = await itemsCollection.Items.FindAsync(id);
       return filter;
     }
 
     public async Task UpdateItemAsync(Item item)
     {
-      var filter = itemsCollection.catalog.FirstOrDefault(item => item.Id == item.Id);
+      var filter = itemsCollection.Items.FirstOrDefault(item => item.Id == item.Id);
       if (filter != null)
       {
-        itemsCollection.catalog.Update(filter);
+        itemsCollection.Items.Update(filter);
 
         await itemsCollection.SaveChangesAsync();
       }
     }
-    public Task<List<Item>> GetItemsAsync() => Task.FromResult(itemsCollection.catalog.ToList());
+    public Task<List<Item>> GetItemsAsync() => Task.FromResult(itemsCollection.Items.ToList());
   }
 }

@@ -33,9 +33,34 @@ namespace Cameshop.Repositories
       return user;
     }
 
+    public Task DeleteUserAsync(Guid id)
+    {
+      throw new NotImplementedException();
+    }
+
+    public Task<User> GetUserAsync(Guid id)
+    {
+      throw new NotImplementedException();
+    }
+
     public async Task<User> GetUserByEmailAsync(string email)
     {
       return await Task.FromResult(_users.FirstOrDefault(u => u.Email == email));
+    }
+
+    public Task<IEnumerable<User>> GetUsersAsync()
+    {
+      throw new NotImplementedException();
+    }
+
+    public Task UpdateUserAsync(User user)
+    {
+      throw new NotImplementedException();
+    }
+
+    Task IUsersRepository.CreateUserAsync(User user)
+    {
+      return CreateUserAsync(user);
     }
 
     private async Task SaveToFileAsync()

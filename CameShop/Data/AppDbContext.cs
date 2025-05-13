@@ -10,6 +10,7 @@ namespace Cameshop.Data
     {
 
     }
-    public DbSet<Item> catalog { get; set; }
+    public DbSet<Item> Items { get; set; }
+    public DbSet<User> Users { get; set; }
   }
 }
