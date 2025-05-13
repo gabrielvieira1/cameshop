@@ -58,7 +58,6 @@ namespace CameShop
         };
       });
 
-      // Política de CORS
       services.AddCors(options =>
       {
         options.AddPolicy("AllowAll", builder =>
@@ -71,21 +70,17 @@ namespace CameShop
 
       services.AddControllers();
 
-      // Repositórios
       services.AddScoped<IItemsRepository, SqlServerDbItemsRepository>();
-      services.AddScoped<IUsersRepository, SqlServerDbUsersRepository>(); // Aqui é o novo repositório de usuários
+      services.AddScoped<IUsersRepository, SqlServerDbUsersRepository>();
       //services.AddScoped<IUsersRepository, InMemUsersRepository>();
 
-      // DbContext com SQL Server
       services.AddDbContext<AppDbContext>(options =>
           options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
-      // Swagger
       services.AddSwaggerGen(c =>
       {
         c.SwaggerDoc("v1", new OpenApiInfo { Title = "CameShop", Version = "v1" });
 
-        // Configuração do JWT no Swagger
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
           Description = @"JWT Authorization header usando o esquema Bearer.  
@@ -120,7 +115,6 @@ namespace CameShop
 
       services.AddSingleton<JwtTokenGenerator>();
 
-      // Se você for ativar middleware de API Key futuramente
       // services.Configure<ApiKeyMiddleware>(Configuration.GetSection("ApiKeys"));
     }
 
@@ -137,7 +131,7 @@ namespace CameShop
       app.UseSwaggerUI(c =>
       {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CameShop v1");
-        c.RoutePrefix = string.Empty;//swagger
+        c.RoutePrefix = string.Empty;
       });
 
       //app.UseMiddleware<ApiKeyMiddleware>();

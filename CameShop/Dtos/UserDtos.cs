@@ -16,5 +16,6 @@ namespace Cameshop.Dtos
     Guid Id,
     string Name,
     string Email,
-    DateTimeOffset CreatedDate);
+    DateTimeOffset CreatedDate,
+    bool Active);
 }

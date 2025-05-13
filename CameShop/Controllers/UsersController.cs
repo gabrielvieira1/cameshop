@@ -3,8 +3,11 @@ using Cameshop.Entities;
 using Cameshop.Extensions;
 using Cameshop.Repositories;
 using Cameshop.Services;
+using Cameshop.Utils;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -51,57 +54,99 @@ namespace Cameshop.Controllers
     [HttpPost("register")]
     public async Task<IActionResult> Register(UserRegisterDto model)
     {
-      var existingUser = await _usersRepository.GetUserByEmailAsync(model.Email);
-      if (existingUser != null)
+      if (!Utils.String.InputIsValid(model.Name))
+        ModelState.AddModelError(nameof(model.Name), "Nome inválido.");
+
+      if (!Utils.String.EmailIsValid(model.Email))
+        ModelState.AddModelError(nameof(model.Email), "Email inválido.");
+
+      if (!Utils.Security.PasswordIsValid(model.Password))
+        ModelState.AddModelError(nameof(model.Password), "A senha não atende aos requisitos.");
+
+      if (!ModelState.IsValid)
       {
-        return Conflict("O email já está em uso.");
+        return BadRequest(ModelState);
       }
 
-      var newUser = new User
+      try
       {
-        Id = Guid.NewGuid(),
-        Name = model.Name,
-        Email = model.Email,
-        PasswordHash = model.Password, // Em produção, use um hash com salt.
-        CreatedDate = DateTimeOffset.UtcNow
-      };
+        var existingUser = await _usersRepository.GetUserByEmailAsync(model.Email);
+        if (existingUser != null)
+        {
+          return Conflict("O e-mail informado já está cadastrado.");
+        }
 
-      await _usersRepository.CreateUserAsync(newUser);
+        var newUser = new User
+        {
+          Id = Guid.NewGuid(),
+          Name = model.Name,
+          Email = model.Email,
+          PasswordHash = Utils.Security.HashPassword(model.Password),
+          CreatedDate = DateTimeOffset.UtcNow,
+          Active = true
+        };
 
-      var responseDto = new UserResponseDto(
-          newUser.Id,
-          newUser.Name,
-          newUser.Email,
-          newUser.CreatedDate
-      );
+        await _usersRepository.CreateUserAsync(newUser);
 
-      return Ok(responseDto);
+        var responseDto = new UserResponseDto(
+            newUser.Id,
+            newUser.Name,
+            newUser.Email,
+            newUser.CreatedDate,
+            newUser.Active
+        );
+
+        return Ok(responseDto);
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"Erro ao registrar usuário: {ex.Message}");
+
+        return StatusCode(500, "Ocorreu um erro inesperado ao processar sua solicitação.");
+      }
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(UserLoginDto model)
+    public async Task<IActionResult> Login(UserLoginDto userModel)
     {
-      var user = await _usersRepository.GetUserByEmailAsync(model.Email);
-      if (user == null || user.PasswordHash != model.Password)
+      if (!Utils.String.EmailIsValid(userModel.Email))
+        ModelState.AddModelError(nameof(userModel.Email), "Email inválido.");
+
+      if (!Utils.Security.PasswordIsValid(userModel.Password))
+        ModelState.AddModelError(nameof(userModel.Password), "Senha inválida.");
+
+      if (!ModelState.IsValid)
       {
-        return Unauthorized("Credenciais inválidas.");
+        return BadRequest(ModelState);
       }
 
-      //var responseDto = new UserResponseDto(
-      //    user.Id,
-      //    user.Name,
-      //    user.Email,
-      //    user.CreatedDate
-      //);
-
-      //return Ok(responseDto);
-
-      var token = _tokenGenerator.GenerateToken(user);
-
-      return Ok(new
+      try
       {
-        Token = token
-      });
+        var user = await _usersRepository.GetUserByEmailAsync(userModel.Email);
+
+        if (user == null || !Utils.Security.VerifyHashedPassword(userModel.Password, user.PasswordHash))
+        {
+          return Unauthorized("Email ou senha incorretos.");
+        }
+
+        var token = _tokenGenerator.GenerateToken(user);
+
+        return Ok(new
+        {
+          Token = token,
+          User = new
+          {
+            user.Id,
+            user.Name,
+            user.Email
+          }
+        });
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"Erro no login: {ex.Message}");
+        return StatusCode(500, "Ocorreu um erro interno ao tentar efetuar o login.");
+      }
     }
 
     [HttpPut("{id}")]

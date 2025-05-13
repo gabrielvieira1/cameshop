@@ -9,6 +9,7 @@ namespace Cameshop.Entities
     public string Email { get; set; }
     public string PasswordHash { get; set; }
     public DateTimeOffset CreatedDate { get; set; }
+    public bool Active { get; set; }
   }
 
 }
