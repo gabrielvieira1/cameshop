@@ -1,5 +1,6 @@
 ﻿using Cameshop.Dtos;
 using Cameshop.Entities;
+using Cameshop.Errors;
 using Cameshop.Extensions;
 using Cameshop.Repositories;
 using Cameshop.Services;
@@ -40,7 +41,16 @@ namespace Cameshop.Controllers
       var user = await _usersRepository.GetUserAsync(id);
       if (user is null)
       {
-        return NotFound();
+        logger.LogWarning("Erro {Code}: {Message} - ID: {UserId}",
+            DomainErrors.User.NotFound.Code,
+            DomainErrors.User.NotFound.Message,
+            id);
+
+        return NotFound(new
+        {
+          DomainErrors.User.NotFound.Code,
+          DomainErrors.User.NotFound.Message
+        });
       }
 
       return Ok(user.AsDto());
@@ -57,18 +67,22 @@ namespace Cameshop.Controllers
     [HttpPost("register")]
     public async Task<IActionResult> Register(UserRegisterDto model)
     {
-      if (!Utils.String.InputIsValid(model.Name))
-        ModelState.AddModelError(nameof(model.Name), "Nome inválido.");
-
-      if (!Utils.String.EmailIsValid(model.Email))
-        ModelState.AddModelError(nameof(model.Email), "Email inválido.");
-
-      if (!Utils.Security.PasswordIsValid(model.Password))
-        ModelState.AddModelError(nameof(model.Password), "A senha não atende aos requisitos.");
-
-      if (!ModelState.IsValid)
+      if (!IsValidCredentials(model))
       {
-        return BadRequest(ModelState);
+        logger.LogWarning("Erro {Code}: {Message} ao registrar usuário com e-mail: {Email}",
+            DomainErrors.Validation.InvalidCredentials.Code,
+            DomainErrors.Validation.InvalidCredentials.Message,
+            model.Email);
+
+        return BadRequest(new
+        {
+          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
+          DomainError = new
+          {
+            DomainErrors.Validation.InvalidCredentials.Code,
+            DomainErrors.Validation.InvalidCredentials.Message
+          }
+        });
       }
 
       try
@@ -76,7 +90,11 @@ namespace Cameshop.Controllers
         var existingUser = await _usersRepository.GetUserByEmailAsync(model.Email);
         if (existingUser != null)
         {
-          return Conflict("O e-mail informado já está cadastrado.");
+          return Conflict(new
+          {
+            DomainErrors.User.EmailInUse.Code,
+            DomainErrors.User.EmailInUse.Message
+          });
         }
 
         var newUser = new User
@@ -92,36 +110,42 @@ namespace Cameshop.Controllers
 
         await _usersRepository.CreateUserAsync(newUser);
 
-        var responseDto = new UserResponseDto(
-            newUser.Id,
-            newUser.Name,
-            newUser.Email,
-            newUser.CreatedDate,
-            newUser.Active
-        );
-
-        return Ok(responseDto);
+        return Ok(newUser.AsDto());
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"Erro ao registrar usuário: {ex.Message}");
+        logger.LogError(ex, "Erro {Code}: {Message} - E-mail: {Email}",
+            DomainErrors.System.ErrorUserRegister.Code,
+            DomainErrors.System.ErrorUserRegister.Message,
+            model.Email);
 
-        return StatusCode(500, "Ocorreu um erro inesperado ao processar sua solicitação.");
+        return StatusCode(500, new
+        {
+          DomainErrors.System.UnexpectedError.Code,
+          DomainErrors.System.UnexpectedError.Message
+        });
       }
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(UserLoginDto userModel)
     {
-      if (!Utils.String.EmailIsValid(userModel.Email))
-        ModelState.AddModelError(nameof(userModel.Email), "Email inválido.");
-
-      if (!Utils.Security.PasswordIsValid(userModel.Password))
-        ModelState.AddModelError(nameof(userModel.Password), "Senha inválida.");
-
-      if (!ModelState.IsValid)
+      if (!IsValidLogin(userModel))
       {
-        return BadRequest(ModelState);
+        logger.LogWarning("Erro {Code}: {Message} no login - E-mail: {Email}",
+           DomainErrors.Validation.InvalidCredentials.Code,
+           DomainErrors.Validation.InvalidCredentials.Message,
+           userModel.Email);
+
+        return BadRequest(new
+        {
+          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
+          DomainError = new
+          {
+            DomainErrors.Validation.InvalidCredentials.Code,
+            DomainErrors.Validation.InvalidCredentials.Message
+          }
+        });
       }
 
       try
@@ -130,7 +154,16 @@ namespace Cameshop.Controllers
 
         if (user == null || !Utils.Security.VerifyHashedPassword(userModel.Password, user.PasswordHash))
         {
-          return Unauthorized("Email ou senha incorretos.");
+          logger.LogWarning("Erro {Code}: {Message} - Tentativa de login inválida: {Email}",
+              DomainErrors.User.InvalidLogin.Code,
+              DomainErrors.User.InvalidLogin.Message,
+              userModel.Email);
+
+          return Unauthorized(new
+          {
+            DomainErrors.User.InvalidLogin.Code,
+            DomainErrors.User.InvalidLogin.Message
+          });
         }
 
         var token = _tokenGenerator.GenerateToken(user);
@@ -148,8 +181,16 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"Erro no login: {ex.Message}");
-        return StatusCode(500, "Ocorreu um erro interno ao tentar efetuar o login.");
+        logger.LogError(ex, "Erro {Code}: {Message} - E-mail: {Email}",
+           DomainErrors.System.ErrorLogin.Code,
+           DomainErrors.System.ErrorLogin.Message,
+           userModel.Email);
+
+        return StatusCode(500, new
+        {
+          DomainErrors.System.UnexpectedError.Code,
+          DomainErrors.System.UnexpectedError.Message
+        });
       }
     }
 
@@ -157,18 +198,22 @@ namespace Cameshop.Controllers
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateUserAsync(Guid id, UserRegisterDto model)
     {
-      if (!Utils.String.InputIsValid(model.Name))
-        ModelState.AddModelError(nameof(model.Name), "Nome inválido.");
-
-      if (!Utils.String.EmailIsValid(model.Email))
-        ModelState.AddModelError(nameof(model.Email), "Email inválido.");
-
-      if (!Utils.Security.PasswordIsValid(model.Password))
-        ModelState.AddModelError(nameof(model.Password), "A senha não atende aos requisitos.");
-
-      if (!ModelState.IsValid)
+      if (!IsValidCredentials(model))
       {
-        return BadRequest(ModelState);
+        logger.LogWarning("Erro {Code}: {Message} ao registrar usuário com e-mail: {Email}",
+            DomainErrors.Validation.InvalidCredentials.Code,
+            DomainErrors.Validation.InvalidCredentials.Message,
+            model.Email);
+
+        return BadRequest(new
+        {
+          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
+          DomainError = new
+          {
+            DomainErrors.Validation.InvalidCredentials.Code,
+            DomainErrors.Validation.InvalidCredentials.Message
+          }
+        });
       }
 
       try
@@ -176,7 +221,7 @@ namespace Cameshop.Controllers
         var user = await _usersRepository.GetUserAsync(id);
         if (user is null)
         {
-          return NotFound();
+          return NotFound(DomainErrors.User.NotFound);
         }
 
         user.Name = model.Name;
@@ -189,9 +234,16 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"Erro ao registrar usuário: {ex.Message}");
+        logger.LogError(ex, "Erro {Code}: {Message} - E-mail: {Email}",
+            DomainErrors.System.ErrorUserUpdate.Code,
+            DomainErrors.System.ErrorUserUpdate.Message,
+            model.Email);
 
-        return StatusCode(500, "Ocorreu um erro inesperado ao processar sua solicitação.");
+        return StatusCode(500, new
+        {
+          DomainErrors.System.UnexpectedError.Code,
+          DomainErrors.System.UnexpectedError.Message
+        });
       }
     }
 
@@ -206,7 +258,57 @@ namespace Cameshop.Controllers
       }
 
       await _usersRepository.DeleteUserAsync(id);
+
+      logger.LogWarning("Erro {Code}: {Message} - ID: {UserId}",
+            DomainErrors.System.UserDeleted.Code,
+            DomainErrors.System.UserDeleted.Message,
+            id);
+
       return NoContent();
+    }
+
+    private bool IsValidCredentials(UserRegisterDto model)
+    {
+      bool isValid = true;
+
+      if (!Utils.String.InputIsValid(model.Name))
+      {
+        ModelState.AddModelError(nameof(model.Name), DomainErrors.Validation.InvalidName.Message);
+        isValid = false;
+      }
+
+      if (!Utils.String.EmailIsValid(model.Email))
+      {
+        ModelState.AddModelError(nameof(model.Email), DomainErrors.Validation.InvalidEmail.Message);
+        isValid = false;
+      }
+
+      if (!Utils.Security.PasswordIsValid(model.Password))
+      {
+        ModelState.AddModelError(nameof(model.Password), DomainErrors.Validation.InvalidPassword.Message);
+        isValid = false;
+      }
+
+      return isValid;
+    }
+
+    private bool IsValidLogin(UserLoginDto model)
+    {
+      bool isValid = true;
+
+      if (!Utils.String.EmailIsValid(model.Email))
+      {
+        ModelState.AddModelError(nameof(model.Email), DomainErrors.Validation.InvalidEmail.Message);
+        isValid = false;
+      }
+
+      if (!Utils.Security.PasswordIsValid(model.Password))
+      {
+        ModelState.AddModelError(nameof(model.Password), DomainErrors.Validation.InvalidPassword.Message);
+        isValid = false;
+      }
+
+      return isValid;
     }
   }
 }

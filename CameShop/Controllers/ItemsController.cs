@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Cameshop.Entities;
+using Cameshop.Errors;
 using Cameshop.Extensions;
 using Cameshop.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -41,8 +42,6 @@ namespace Cameshop.Controllers
         items = items.Where(item => item.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
       }
 
-      logger.LogInformation($"{DateTime.UtcNow.ToString("hh:mm:ss")}: Retrieved {items.Count()} items");
-
       return items;
     }
 
@@ -55,10 +54,11 @@ namespace Cameshop.Controllers
 
       if (item is null)
       {
-        return NotFound();
+        logger.LogWarning("Erro {Code}: {Message} - ID: {ItemId}", DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message, id);
+        return NotFound(new { DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message });
       }
 
-      return item.AsDto();
+      return Ok(item.AsDto());
     }
 
     // POST /items
@@ -66,19 +66,44 @@ namespace Cameshop.Controllers
     [HttpPost]
     public async Task<ActionResult<ItemDto>> CreateItemAsync(CreateItemDto itemDto)
     {
-      Item item = new()
+      if (!IsValidItem(itemDto.Name, itemDto.Description, itemDto.Price))
       {
-        Id = Guid.NewGuid(),
-        Name = itemDto.Name,
-        Description = itemDto.Description,
-        Price = itemDto.Price,
-        CreatedDate = DateTimeOffset.UtcNow
-      };
+        logger.LogWarning("Erro {Code}: {Message}",
+            DomainErrors.Item.InvalidCreatedItem.Code,
+            DomainErrors.Item.InvalidCreatedItem.Message);
 
-      await repository.CreateItemAsync(item);
+        return BadRequest(new
+        {
+          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
+          DomainError = new
+          {
+            DomainErrors.Item.InvalidCreatedItem.Code,
+            DomainErrors.Item.InvalidCreatedItem.Message
+          }
+        });
+      }
 
+      try
+      {
+        Item item = new()
+        {
+          Id = Guid.NewGuid(),
+          Name = itemDto.Name,
+          Description = itemDto.Description,
+          Price = itemDto.Price,
+          CreatedDate = DateTimeOffset.UtcNow
+        };
 
-      return Created("ok", CreatedAtAction(nameof(GetItemAsync), new { id = item.Id }, item.AsDto()));
+        await repository.CreateItemAsync(item);
+
+        //return Created("ok", CreatedAtAction(nameof(GetItemAsync), new { id = item.Id }, item.AsDto()));
+        return Ok(item.AsDto());
+      }
+      catch (Exception ex)
+      {
+        logger.LogError(ex, "Erro {Code}: {Message}", DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message);
+        return StatusCode(500, new { DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message });
+      }
     }
 
     // PUT /items/{id}
@@ -86,20 +111,47 @@ namespace Cameshop.Controllers
     [HttpPut("{id}")]
     public async Task<ActionResult> UpdateItemAsync(Guid id, UpdateItemDto itemDto)
     {
-      var existingItem = await repository.GetItemAsync(id);
-
-      if (existingItem is null)
+      if (!IsValidItem(itemDto.Name, itemDto.Description, itemDto.Price))
       {
-        return NotFound();
+        logger.LogWarning("Erro {Code}: {Message} - ID: {ItemId}",
+            DomainErrors.Item.InvalidUpdatedeItem.Code,
+            DomainErrors.Item.InvalidUpdatedeItem.Message,
+            id);
+
+        return BadRequest(new
+        {
+          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
+          DomainError = new
+          {
+            DomainErrors.Item.InvalidUpdatedeItem.Code,
+            DomainErrors.Item.InvalidUpdatedeItem.Message
+          }
+        });
       }
 
-      existingItem.Name = itemDto.Name;
-      existingItem.Description = itemDto.Description;
-      existingItem.Price = itemDto.Price;
+      try
+      {
+        var existingItem = await repository.GetItemAsync(id);
+        if (existingItem is null)
+        {
+          logger.LogWarning("Erro {Code}: {Message} - ID: {ItemId}", DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message, id);
+          return NotFound(new { DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message });
+        }
 
-      await repository.UpdateItemAsync(existingItem);
+        existingItem.Name = itemDto.Name;
+        existingItem.Description = itemDto.Description;
+        existingItem.Price = itemDto.Price;
 
-      return Ok();
+        await repository.UpdateItemAsync(existingItem);
+
+        logger.LogInformation("Item atualizado: {ItemId}", id);
+        return Ok();
+      }
+      catch (Exception ex)
+      {
+        logger.LogError(ex, "Erro {Code}: {Message}", DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message);
+        return StatusCode(500, new { DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message });
+      }
     }
 
     // DELETE /items/{id}
@@ -108,16 +160,41 @@ namespace Cameshop.Controllers
     public async Task<ActionResult> DeleteItemAsync(Guid id)
     {
       var existingItem = await repository.GetItemAsync(id);
-
       if (existingItem is null)
       {
-        return NotFound();
+        logger.LogWarning("Erro {Code}: {Message} - ID: {ItemId}", DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message, id);
+        return NotFound(new { DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message });
       }
 
       await repository.DeleteItemAsync(id);
 
+      logger.LogInformation("Item deletado com sucesso: {ItemId}", id);
       return Ok();
     }
-  }
 
+    private bool IsValidItem(string name, string description, decimal price)
+    {
+      bool isValid = true;
+
+      if (!Utils.String.InputIsValid(name))
+      {
+        ModelState.AddModelError(nameof(name), DomainErrors.Item.InvalidName.Message);
+        isValid = false;
+      }
+
+      if (!Utils.String.InputIsValid(description))
+      {
+        ModelState.AddModelError(nameof(description), DomainErrors.Item.InvalidDescription.Message);
+        isValid = false;
+      }
+
+      if (price <= 0)
+      {
+        ModelState.AddModelError(nameof(price), DomainErrors.Item.InvalidPrice.Message);
+        isValid = false;
+      }
+
+      return isValid;
+    }
+  }
 }
