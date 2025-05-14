@@ -4,6 +4,7 @@ using Cameshop.Extensions;
 using Cameshop.Repositories;
 using Cameshop.Services;
 using Cameshop.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -16,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Cameshop.Controllers
 {
-  [EnableCors("MyPolicy")]
+  [EnableCors("AllowAll")]
   [ApiController]
   [Route("[controller]")]
   public class UsersController : ControllerBase
@@ -32,6 +33,7 @@ namespace Cameshop.Controllers
       _tokenGenerator = tokenGenerator;
     }
 
+    [Authorize(Roles = "Admin,Cliente")]
     [HttpGet("{id}")]
     public async Task<ActionResult<UserResponseDto>> GetUserAsync(Guid id)
     {
@@ -44,6 +46,7 @@ namespace Cameshop.Controllers
       return Ok(user.AsDto());
     }
 
+    [Authorize(Roles = "Admin,Cliente")]
     [HttpGet]
     public async Task<IEnumerable<UserResponseDto>> GetUsersAsync()
     {
@@ -83,7 +86,8 @@ namespace Cameshop.Controllers
           Email = model.Email,
           PasswordHash = Utils.Security.HashPassword(model.Password),
           CreatedDate = DateTimeOffset.UtcNow,
-          Active = true
+          Active = true,
+          Role = "Cliente"
         };
 
         await _usersRepository.CreateUserAsync(newUser);
@@ -149,23 +153,49 @@ namespace Cameshop.Controllers
       }
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateUserAsync(Guid id, UserRegisterDto model)
     {
-      var user = await _usersRepository.GetUserAsync(id);
-      if (user is null)
+      if (!Utils.String.InputIsValid(model.Name))
+        ModelState.AddModelError(nameof(model.Name), "Nome inválido.");
+
+      if (!Utils.String.EmailIsValid(model.Email))
+        ModelState.AddModelError(nameof(model.Email), "Email inválido.");
+
+      if (!Utils.Security.PasswordIsValid(model.Password))
+        ModelState.AddModelError(nameof(model.Password), "A senha não atende aos requisitos.");
+
+      if (!ModelState.IsValid)
       {
-        return NotFound();
+        return BadRequest(ModelState);
       }
 
-      user.Name = model.Name;
-      user.Email = model.Email;
-      user.PasswordHash = model.Password;
+      try
+      {
+        var user = await _usersRepository.GetUserAsync(id);
+        if (user is null)
+        {
+          return NotFound();
+        }
 
-      await _usersRepository.UpdateUserAsync(user);
-      return NoContent();
+        user.Name = model.Name;
+        user.Email = model.Email;
+        user.PasswordHash = Utils.Security.HashPassword(model.Password);
+
+        await _usersRepository.UpdateUserAsync(user);
+
+        return NoContent();
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"Erro ao registrar usuário: {ex.Message}");
+
+        return StatusCode(500, "Ocorreu um erro inesperado ao processar sua solicitação.");
+      }
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUserAsync(Guid id)
     {

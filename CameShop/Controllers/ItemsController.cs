@@ -29,6 +29,7 @@ namespace Cameshop.Controllers
     }
 
     // GET /items
+    [Authorize(Roles = "Admin,Cliente")]
     [HttpGet]
     public async Task<IEnumerable<ItemDto>> GetItemsAsync(string name = null)
     {
@@ -46,6 +47,7 @@ namespace Cameshop.Controllers
     }
 
     // GET /items/{id}
+    [Authorize(Roles = "Admin,Cliente")]
     [HttpGet("{id}")]
     public async Task<ActionResult<ItemDto>> GetItemAsync(Guid id)
     {
@@ -60,6 +62,7 @@ namespace Cameshop.Controllers
     }
 
     // POST /items
+    [Authorize(Roles = "Admin,Cliente")]
     [HttpPost]
     public async Task<ActionResult<ItemDto>> CreateItemAsync(CreateItemDto itemDto)
     {
@@ -79,6 +82,7 @@ namespace Cameshop.Controllers
     }
 
     // PUT /items/{id}
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<ActionResult> UpdateItemAsync(Guid id, UpdateItemDto itemDto)
     {
@@ -99,6 +103,7 @@ namespace Cameshop.Controllers
     }
 
     // DELETE /items/{id}
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteItemAsync(Guid id)
     {
