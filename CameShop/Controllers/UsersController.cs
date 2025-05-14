@@ -58,11 +58,6 @@ namespace Cameshop.Controllers
     [HttpPost("register")]
     public async Task<IActionResult> Register(UserRegisterDto model)
     {
-      //if (!IsValidCredentials(model))
-      //{
-      //  return BadRequest();
-      //}
-
       try
       {
         var existingUser = await _usersRepository.GetUserByEmailAsync(model.Email);
