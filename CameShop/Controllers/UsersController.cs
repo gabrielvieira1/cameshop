@@ -41,16 +41,7 @@ namespace Cameshop.Controllers
       var user = await _usersRepository.GetUserAsync(id);
       if (user is null)
       {
-        logger.LogWarning("Erro {Code}: {Message} - ID: {UserId}",
-            DomainErrors.User.NotFound.Code,
-            DomainErrors.User.NotFound.Message,
-            id);
-
-        return NotFound(new
-        {
-          DomainErrors.User.NotFound.Code,
-          DomainErrors.User.NotFound.Message
-        });
+        return NotFound();
       }
 
       return Ok(user.AsDto());
@@ -69,20 +60,7 @@ namespace Cameshop.Controllers
     {
       if (!IsValidCredentials(model))
       {
-        logger.LogWarning("Erro {Code}: {Message} ao registrar usuário com e-mail: {Email}",
-            DomainErrors.Validation.InvalidCredentials.Code,
-            DomainErrors.Validation.InvalidCredentials.Message,
-            model.Email);
-
-        return BadRequest(new
-        {
-          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
-          DomainError = new
-          {
-            DomainErrors.Validation.InvalidCredentials.Code,
-            DomainErrors.Validation.InvalidCredentials.Message
-          }
-        });
+        return BadRequest();
       }
 
       try
@@ -90,11 +68,7 @@ namespace Cameshop.Controllers
         var existingUser = await _usersRepository.GetUserByEmailAsync(model.Email);
         if (existingUser != null)
         {
-          return Conflict(new
-          {
-            DomainErrors.User.EmailInUse.Code,
-            DomainErrors.User.EmailInUse.Message
-          });
+          return Conflict("O email já está em uso.");
         }
 
         var newUser = new User
@@ -114,16 +88,7 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Erro {Code}: {Message} - E-mail: {Email}",
-            DomainErrors.System.ErrorUserRegister.Code,
-            DomainErrors.System.ErrorUserRegister.Message,
-            model.Email);
-
-        return StatusCode(500, new
-        {
-          DomainErrors.System.UnexpectedError.Code,
-          DomainErrors.System.UnexpectedError.Message
-        });
+        return StatusCode(500, "Erro inesperado. Tente novamente.");
       }
     }
 
@@ -132,41 +97,22 @@ namespace Cameshop.Controllers
     {
       if (!IsValidLogin(userModel))
       {
-        logger.LogWarning("Erro {Code}: {Message} no login - E-mail: {Email}",
-           DomainErrors.Validation.InvalidCredentials.Code,
-           DomainErrors.Validation.InvalidCredentials.Message,
-           userModel.Email);
-
-        return BadRequest(new
-        {
-          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
-          DomainError = new
-          {
-            DomainErrors.Validation.InvalidCredentials.Code,
-            DomainErrors.Validation.InvalidCredentials.Message
-          }
-        });
+        return BadRequest();
       }
 
       try
       {
         var user = await _usersRepository.GetUserByEmailAsync(userModel.Email);
 
-        if (user == null || !Utils.Security.VerifyHashedPassword(userModel.Password, user.PasswordHash))
-        {
-          logger.LogWarning("Erro {Code}: {Message} - Tentativa de login inválida: {Email}",
-              DomainErrors.User.InvalidLogin.Code,
-              DomainErrors.User.InvalidLogin.Message,
-              userModel.Email);
+        if (user == null)
+          return NotFound("Usuário não encontrado.");
 
-          return Unauthorized(new
-          {
-            DomainErrors.User.InvalidLogin.Code,
-            DomainErrors.User.InvalidLogin.Message
-          });
-        }
+        if (!Utils.Security.VerifyHashedPassword(userModel.Password, user.PasswordHash))
+          return Unauthorized("Senha incorreta.");
 
         var token = _tokenGenerator.GenerateToken(user);
+
+        logger.LogInformation($"Login attempt for user: {userModel.Email} with password: {userModel.Password}");
 
         return Ok(new
         {
@@ -181,16 +127,7 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Erro {Code}: {Message} - E-mail: {Email}",
-           DomainErrors.System.ErrorLogin.Code,
-           DomainErrors.System.ErrorLogin.Message,
-           userModel.Email);
-
-        return StatusCode(500, new
-        {
-          DomainErrors.System.UnexpectedError.Code,
-          DomainErrors.System.UnexpectedError.Message
-        });
+        return StatusCode(500, "Erro inesperado. Tente novamente.");
       }
     }
 
@@ -200,20 +137,7 @@ namespace Cameshop.Controllers
     {
       if (!IsValidCredentials(model))
       {
-        logger.LogWarning("Erro {Code}: {Message} ao registrar usuário com e-mail: {Email}",
-            DomainErrors.Validation.InvalidCredentials.Code,
-            DomainErrors.Validation.InvalidCredentials.Message,
-            model.Email);
-
-        return BadRequest(new
-        {
-          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
-          DomainError = new
-          {
-            DomainErrors.Validation.InvalidCredentials.Code,
-            DomainErrors.Validation.InvalidCredentials.Message
-          }
-        });
+        return BadRequest();
       }
 
       try
@@ -221,7 +145,7 @@ namespace Cameshop.Controllers
         var user = await _usersRepository.GetUserAsync(id);
         if (user is null)
         {
-          return NotFound(DomainErrors.User.NotFound);
+          return NotFound();
         }
 
         user.Name = model.Name;
@@ -234,16 +158,7 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Erro {Code}: {Message} - E-mail: {Email}",
-            DomainErrors.System.ErrorUserUpdate.Code,
-            DomainErrors.System.ErrorUserUpdate.Message,
-            model.Email);
-
-        return StatusCode(500, new
-        {
-          DomainErrors.System.UnexpectedError.Code,
-          DomainErrors.System.UnexpectedError.Message
-        });
+        return StatusCode(500, "Erro inesperado. Tente novamente.");
       }
     }
 
@@ -258,11 +173,6 @@ namespace Cameshop.Controllers
       }
 
       await _usersRepository.DeleteUserAsync(id);
-
-      logger.LogWarning("Erro {Code}: {Message} - ID: {UserId}",
-            DomainErrors.System.UserDeleted.Code,
-            DomainErrors.System.UserDeleted.Message,
-            id);
 
       return NoContent();
     }

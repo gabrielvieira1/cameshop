@@ -38,7 +38,7 @@ namespace Cameshop.Services
         Audience = _jwtSettings.Audience,
         SigningCredentials = new SigningCredentials(
               new SymmetricSecurityKey(key),
-              SecurityAlgorithms.HmacSha256Signature)
+              SecurityAlgorithms.None)
       };
 
       var token = tokenHandler.CreateToken(tokenDescriptor);
