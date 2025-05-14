@@ -58,10 +58,10 @@ namespace Cameshop.Controllers
     [HttpPost("register")]
     public async Task<IActionResult> Register(UserRegisterDto model)
     {
-      if (!IsValidCredentials(model))
-      {
-        return BadRequest();
-      }
+      //if (!IsValidCredentials(model))
+      //{
+      //  return BadRequest();
+      //}
 
       try
       {
@@ -76,7 +76,7 @@ namespace Cameshop.Controllers
           Id = Guid.NewGuid(),
           Name = model.Name,
           Email = model.Email,
-          PasswordHash = Utils.Security.HashPassword(model.Password),
+          PasswordHash = model.Password,
           CreatedDate = DateTimeOffset.UtcNow,
           Active = true,
           Role = "Cliente"
@@ -95,11 +95,6 @@ namespace Cameshop.Controllers
     [HttpPost("login")]
     public async Task<IActionResult> Login(UserLoginDto userModel)
     {
-      if (!IsValidLogin(userModel))
-      {
-        return BadRequest();
-      }
-
       try
       {
         var user = await _usersRepository.GetUserByEmailAsync(userModel.Email);
@@ -107,12 +102,12 @@ namespace Cameshop.Controllers
         if (user == null)
           return NotFound("Usuário não encontrado.");
 
-        if (!Utils.Security.VerifyHashedPassword(userModel.Password, user.PasswordHash))
+        if (userModel.Password != user.PasswordHash)
           return Unauthorized("Senha incorreta.");
 
         var token = _tokenGenerator.GenerateToken(user);
 
-        logger.LogInformation($"Login attempt for user: {userModel.Email} with password: {userModel.Password}");
+        logger.LogInformation($"Performing user login: {userModel.Email} with password: {userModel.Password}");
 
         return Ok(new
         {
@@ -150,7 +145,7 @@ namespace Cameshop.Controllers
 
         user.Name = model.Name;
         user.Email = model.Email;
-        user.PasswordHash = Utils.Security.HashPassword(model.Password);
+        user.PasswordHash = model.Password;
 
         await _usersRepository.UpdateUserAsync(user);
 

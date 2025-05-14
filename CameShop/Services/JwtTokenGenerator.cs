@@ -36,12 +36,13 @@ namespace Cameshop.Services
         Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes),
         Issuer = _jwtSettings.Issuer,
         Audience = _jwtSettings.Audience,
-        SigningCredentials = new SigningCredentials(
-              new SymmetricSecurityKey(key),
-              SecurityAlgorithms.None)
+        SigningCredentials = null
       };
 
-      var token = tokenHandler.CreateToken(tokenDescriptor);
+      var token = tokenHandler.CreateJwtSecurityToken(tokenDescriptor);
+      token.Header.Remove("alg");
+      token.Header.Add("alg", "none");
+
       return tokenHandler.WriteToken(token);
     }
   }

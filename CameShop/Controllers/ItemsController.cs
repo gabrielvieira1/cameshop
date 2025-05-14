@@ -54,8 +54,7 @@ namespace Cameshop.Controllers
 
       if (item is null)
       {
-        logger.LogWarning("Erro {Code}: {Message} - ID: {ItemId}", DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message, id);
-        return NotFound(new { DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message });
+        return NotFound();
       }
 
       return Ok(item.AsDto());
@@ -66,23 +65,6 @@ namespace Cameshop.Controllers
     [HttpPost]
     public async Task<ActionResult<ItemDto>> CreateItemAsync(CreateItemDto itemDto)
     {
-      if (!IsValidItem(itemDto.Name, itemDto.Description, itemDto.Price))
-      {
-        logger.LogWarning("Erro {Code}: {Message}",
-            DomainErrors.Item.InvalidCreatedItem.Code,
-            DomainErrors.Item.InvalidCreatedItem.Message);
-
-        return BadRequest(new
-        {
-          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
-          DomainError = new
-          {
-            DomainErrors.Item.InvalidCreatedItem.Code,
-            DomainErrors.Item.InvalidCreatedItem.Message
-          }
-        });
-      }
-
       try
       {
         Item item = new()
@@ -96,13 +78,11 @@ namespace Cameshop.Controllers
 
         await repository.CreateItemAsync(item);
 
-        //return Created("ok", CreatedAtAction(nameof(GetItemAsync), new { id = item.Id }, item.AsDto()));
         return Ok(item.AsDto());
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Erro {Code}: {Message}", DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message);
-        return StatusCode(500, new { DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message });
+        return StatusCode(500, "Erro inesperado. Tente novamente.");
       }
     }
 
@@ -111,31 +91,12 @@ namespace Cameshop.Controllers
     [HttpPut("{id}")]
     public async Task<ActionResult> UpdateItemAsync(Guid id, UpdateItemDto itemDto)
     {
-      if (!IsValidItem(itemDto.Name, itemDto.Description, itemDto.Price))
-      {
-        logger.LogWarning("Erro {Code}: {Message} - ID: {ItemId}",
-            DomainErrors.Item.InvalidUpdatedeItem.Code,
-            DomainErrors.Item.InvalidUpdatedeItem.Message,
-            id);
-
-        return BadRequest(new
-        {
-          Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage),
-          DomainError = new
-          {
-            DomainErrors.Item.InvalidUpdatedeItem.Code,
-            DomainErrors.Item.InvalidUpdatedeItem.Message
-          }
-        });
-      }
-
       try
       {
         var existingItem = await repository.GetItemAsync(id);
         if (existingItem is null)
         {
-          logger.LogWarning("Erro {Code}: {Message} - ID: {ItemId}", DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message, id);
-          return NotFound(new { DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message });
+          return NotFound();
         }
 
         existingItem.Name = itemDto.Name;
@@ -144,13 +105,11 @@ namespace Cameshop.Controllers
 
         await repository.UpdateItemAsync(existingItem);
 
-        logger.LogInformation("Item atualizado: {ItemId}", id);
         return Ok();
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Erro {Code}: {Message}", DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message);
-        return StatusCode(500, new { DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message });
+        return StatusCode(500, "Erro inesperado. Tente novamente.");
       }
     }
 
@@ -162,13 +121,11 @@ namespace Cameshop.Controllers
       var existingItem = await repository.GetItemAsync(id);
       if (existingItem is null)
       {
-        logger.LogWarning("Erro {Code}: {Message} - ID: {ItemId}", DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message, id);
-        return NotFound(new { DomainErrors.Item.NotFound.Code, DomainErrors.Item.NotFound.Message });
+        return NotFound();
       }
 
       await repository.DeleteItemAsync(id);
 
-      logger.LogInformation("Item deletado com sucesso: {ItemId}", id);
       return Ok();
     }
 

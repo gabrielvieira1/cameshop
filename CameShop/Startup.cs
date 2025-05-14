@@ -16,6 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,12 +50,14 @@ namespace CameShop
         x.SaveToken = true;
         x.TokenValidationParameters = new TokenValidationParameters
         {
-          ValidateIssuerSigningKey = true,
-          IssuerSigningKey = new SymmetricSecurityKey(key),
-          ValidateIssuer = true,
-          ValidateAudience = true,
-          ValidIssuer = jwtSettings.Issuer,
-          ValidAudience = jwtSettings.Audience
+          ValidateIssuerSigningKey = false,
+          ValidateIssuer = false,
+          ValidateAudience = false,
+          SignatureValidator = delegate (string token, TokenValidationParameters parameters)
+          {
+            var jwt = new JwtSecurityToken(token);
+            return jwt;
+          }
         };
       });
 
