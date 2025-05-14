@@ -83,7 +83,7 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        return StatusCode(500, "Erro inesperado. Tente novamente.");
+        return StatusCode(500, $"Erro inesperado: {ex.Message}\nStackTrace: {ex.StackTrace}");
       }
     }
 
@@ -117,7 +117,7 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        return StatusCode(500, "Erro inesperado. Tente novamente.");
+        return StatusCode(500, $"Erro inesperado: {ex.Message}\nStackTrace: {ex.StackTrace}");
       }
     }
 
@@ -148,7 +148,7 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        return StatusCode(500, "Erro inesperado. Tente novamente.");
+        return StatusCode(500, $"Erro inesperado: {ex.Message}\nStackTrace: {ex.StackTrace}");
       }
     }
 
