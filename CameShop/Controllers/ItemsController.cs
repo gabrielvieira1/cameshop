@@ -82,7 +82,7 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        return StatusCode(500, "Erro inesperado. Tente novamente.");
+        return StatusCode(500, $"Erro inesperado: {ex.Message}\nStackTrace: {ex.StackTrace}");
       }
     }
 
@@ -109,7 +109,7 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        return StatusCode(500, "Erro inesperado. Tente novamente.");
+        return StatusCode(500, $"Erro inesperado: {ex.Message}\nStackTrace: {ex.StackTrace}");
       }
     }
 
@@ -118,15 +118,22 @@ namespace Cameshop.Controllers
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteItemAsync(Guid id)
     {
-      var existingItem = await repository.GetItemAsync(id);
-      if (existingItem is null)
+      try
       {
-        return NotFound();
+        var existingItem = await repository.GetItemAsync(id);
+        if (existingItem is null)
+        {
+          return NotFound();
+        }
+
+        await repository.DeleteItemAsync(id);
+
+        return Ok();
       }
-
-      await repository.DeleteItemAsync(id);
-
-      return Ok();
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Erro inesperado: {ex.Message}\nStackTrace: {ex.StackTrace}");
+      }
     }
 
     private bool IsValidItem(string name, string description, decimal price)

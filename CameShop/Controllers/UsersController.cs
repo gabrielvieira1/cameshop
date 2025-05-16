@@ -156,15 +156,22 @@ namespace Cameshop.Controllers
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUserAsync(Guid id)
     {
-      var user = await _usersRepository.GetUserAsync(id);
-      if (user is null)
+      try
       {
-        return NotFound();
+        var user = await _usersRepository.GetUserAsync(id);
+        if (user is null)
+        {
+          return NotFound();
+        }
+
+        await _usersRepository.DeleteUserAsync(id);
+
+        return NoContent();
       }
-
-      await _usersRepository.DeleteUserAsync(id);
-
-      return NoContent();
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Erro inesperado: {ex.Message}\nStackTrace: {ex.StackTrace}");
+      }
     }
 
     private bool IsValidCredentials(UserRegisterDto model)
