@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Cameshop.Controllers
@@ -33,11 +34,27 @@ namespace Cameshop.Controllers
       this.logger = logger;
       _tokenGenerator = tokenGenerator;
     }
+    private Guid GetAuthenticatedUserId()
+    {
+      var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+      return Guid.TryParse(userIdClaim, out var userId) ? userId : Guid.Empty;
+    }
 
     [Authorize(Roles = "Admin,Cliente")]
     [HttpGet("{id}")]
     public async Task<ActionResult<UserResponseDto>> GetUserAsync(Guid id)
     {
+      var authenticatedUserId = GetAuthenticatedUserId();
+
+      if (authenticatedUserId == Guid.Empty || authenticatedUserId != id)
+      {
+        logger.LogWarning("Erro {Code}: Acesso negado ao usuário com ID: {RequestedId}",
+            DomainErrors.User.Unauthorized.Code,
+            id);
+
+        return Unauthorized();
+      }
+
       var user = await _usersRepository.GetUserAsync(id);
       if (user is null)
       {
@@ -56,7 +73,7 @@ namespace Cameshop.Controllers
       return Ok(user.AsDto());
     }
 
-    [Authorize(Roles = "Admin,Cliente")]
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IEnumerable<UserResponseDto>> GetUsersAsync()
     {

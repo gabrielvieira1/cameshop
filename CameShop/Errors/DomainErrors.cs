@@ -24,6 +24,8 @@ namespace Cameshop.Errors
       public static readonly DomainError NotFound = new(1001, "Usuário não encontrado.");
       public static readonly DomainError EmailInUse = new(1002, "O e-mail informado já está em uso.");
       public static readonly DomainError InvalidLogin = new(1003, "E-mail ou senha incorretos.");
+      public static readonly DomainError InvalidCredentials = new(1003, "Credenciais inválidas.");
+      public static readonly DomainError Unauthorized = new(1004, "Acesso não autorizado.");
     }
 
     public static class Validation
@@ -50,7 +52,6 @@ namespace Cameshop.Errors
       public static readonly DomainError InvalidPrice = new(3004, "Preço do item inválido.");
       public static readonly DomainError InvalidCreatedItem = new(3005, "Erro ao validar criação de item.");
       public static readonly DomainError InvalidUpdatedeItem = new(3005, "Erro ao validar atualização de item.");
-      public static readonly DomainError UnexpectedError = new(3900, "Erro inesperado ao processar item.");
     }
   }
 }

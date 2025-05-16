@@ -101,8 +101,8 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Erro {Code}: {Message}", DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message);
-        return StatusCode(500, new { DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message });
+        logger.LogError(ex, "Erro {Code}: {Message}", DomainErrors.System.UnexpectedError.Code, DomainErrors.System.UnexpectedError.Message);
+        return StatusCode(500, new { DomainErrors.System.UnexpectedError.Code, DomainErrors.System.UnexpectedError.Message });
       }
     }
 
@@ -149,8 +149,8 @@ namespace Cameshop.Controllers
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Erro {Code}: {Message}", DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message);
-        return StatusCode(500, new { DomainErrors.Item.UnexpectedError.Code, DomainErrors.Item.UnexpectedError.Message });
+        logger.LogError(ex, "Erro {Code}: {Message}", DomainErrors.System.UnexpectedError.Code, DomainErrors.System.UnexpectedError.Message);
+        return StatusCode(500, new { DomainErrors.System.UnexpectedError.Code, DomainErrors.System.UnexpectedError.Message });
       }
     }
 

@@ -54,7 +54,8 @@ namespace CameShop
           ValidateIssuer = true,
           ValidateAudience = true,
           ValidIssuer = jwtSettings.Issuer,
-          ValidAudience = jwtSettings.Audience
+          ValidAudience = jwtSettings.Audience,
+          ClockSkew = TimeSpan.Zero
         };
       });
 
