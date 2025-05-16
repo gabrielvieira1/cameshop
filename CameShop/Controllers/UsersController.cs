@@ -44,12 +44,13 @@ namespace Cameshop.Controllers
     [HttpGet("{id}")]
     public async Task<ActionResult<UserResponseDto>> GetUserAsync(Guid id)
     {
-      var authenticatedUserId = GetAuthenticatedUserId();
+      var authenticatedUserId = Security.GetAuthenticatedUserId(User);
 
       if (authenticatedUserId == Guid.Empty || authenticatedUserId != id)
       {
-        logger.LogWarning("Erro {Code}: Acesso negado ao usuário com ID: {RequestedId}",
+        logger.LogWarning("Erro {Code}: {Message} - ID: {UserId}",
             DomainErrors.User.Unauthorized.Code,
+            DomainErrors.User.Unauthorized.Message,
             id);
 
         return Unauthorized();

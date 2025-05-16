@@ -1,4 +1,7 @@
-﻿namespace Cameshop.Utils
+﻿using System.Security.Claims;
+using System;
+
+namespace Cameshop.Utils
 {
   public class Security
   {
@@ -50,6 +53,14 @@
         if (passWord.IndexOfAny(special) == -1) return false;
       }
       return true;
+    }
+    public static Guid GetAuthenticatedUserId(ClaimsPrincipal user)
+    {
+      var userIdClaim = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+      return Guid.TryParse(userIdClaim, out var userId)
+          ? userId
+          : Guid.Empty;
     }
   }
 }
