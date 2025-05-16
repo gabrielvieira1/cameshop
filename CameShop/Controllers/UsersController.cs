@@ -34,11 +34,6 @@ namespace Cameshop.Controllers
       this.logger = logger;
       _tokenGenerator = tokenGenerator;
     }
-    private Guid GetAuthenticatedUserId()
-    {
-      var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-      return Guid.TryParse(userIdClaim, out var userId) ? userId : Guid.Empty;
-    }
 
     [Authorize(Roles = "Admin,Cliente")]
     [HttpGet("{id}")]
