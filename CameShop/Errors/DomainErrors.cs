@@ -30,9 +30,9 @@ namespace Cameshop.Errors
 
     public static class Validation
     {
-      public static readonly DomainError InvalidEmail = new(2001, "E-mail inválido.");
-      public static readonly DomainError InvalidPassword = new(2002, "Senha inválida.");
-      public static readonly DomainError InvalidName = new(2003, "Nome inválido." );
+      public static readonly DomainError InvalidEmail = new(2001, "E-mail inválido. Informe um endereço de e-mail válido no formato exemplo@dominio.com.");
+      public static readonly DomainError InvalidPassword = new(2002, "Senha inválida. A senha deve conter letra maiúscula e minúscula, número e caractere especial.");
+      public static readonly DomainError InvalidName = new(2003, "Nome inválido. O nome deve conter apenas letras maiúscula e minúscula");
       public static readonly DomainError InvalidCredentials = new(2004, "As credenciais fornecidas são inválidas.");
     }
 
