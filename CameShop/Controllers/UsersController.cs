@@ -102,7 +102,7 @@ namespace Cameshop.Controllers
 
         var token = _tokenGenerator.GenerateToken(user);
 
-        logger.LogInformation($"Performing user login: {userModel.Email} with password: {userModel.Password}");
+        logger.LogInformation($"Tentativa de login: {userModel.Email} com a senha: {userModel.Password}");
 
         return Ok(new
         {
