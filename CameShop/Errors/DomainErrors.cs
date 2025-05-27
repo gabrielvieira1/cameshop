@@ -39,7 +39,7 @@ namespace Cameshop.Errors
     public static class System
     {
       public static readonly DomainError ErrorUserRegister = new(9001, "Erro ao registrar usuário.");
-      public static readonly DomainError ErrorLogin = new(9003, "Erro ao tentar realizar login."  );
+      public static readonly DomainError ErrorLogin = new(9003, "Erro ao tentar realizar login.");
       public static readonly DomainError ErrorUserUpdate = new(9004, "Erro ao atualizar o usuário.");
       public static readonly DomainError UnexpectedError = new(9999, "Erro inesperado. Tente novamente.");
       public static readonly DomainError UserDeleted = new(9006, "Usuário deletado.");
