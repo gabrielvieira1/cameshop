@@ -1,5 +1,5 @@
 # Cameshop API
-Esse projeto foi desenvolvido para a disciplina de Sistemas Distribuidos é uma REST API usando .NET 5, Azure, Post and Visual Studio Code and SQL Server.
+Esse projeto foi desenvolvido para representar uma REST API usando .NET 5 vulnerável.
 
 ## 🚀 Technologies
 
